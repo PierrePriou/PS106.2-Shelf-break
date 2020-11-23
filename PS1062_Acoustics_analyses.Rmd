@@ -1,0 +1,107 @@
+---
+title: "PS106.2 Shelf break study - Acoustic analyses"
+author: "Pierre Priou"
+date: "11/23/2020"
+output: html_document
+---
+
+## Methods
+
+### Sampling and processing of hydroacoustic data
+
+Acoustic backscatter was continuously recorded at 18, 38, 70, 120, and 200 kHz using a hull-mounted split beam EK60 echosounder (Simrad). All the transducers but the 18 kHz were calibrated before the cruise (2017, June 18) using the standard sphere method (Demer et al. 2015). Although the 18 kHz was not calibrated prior to this study, the calibration factors remained relatively constant over time (**X** and **X** dB) and we therefore included the 18 kHz data in this study. The transducers were located at 11 m depth in the ship’s hull and pulse length was set to 1,024 μs, the ping rate varied from 0.38 to 0.61 Hz to accommodate for other onboard acoustic instrumentation, and the nominal beam angle was 11° for the 18 kHz transducer and 7° for the other transducers.
+
+Acoustic data scrutinized, cleaned, and edited using Echoview 11 (Echoview Software Pty Ltd.). We removed background (minimum 10 dB signal-to-noise ratio) and impulse noise with Echoview’s algorithms. We excluded data in the transducers dead zone (20 m depth) and within 5 m of the seafloor. Acoustic backscatter was echo-integrated in 10 min long x 5 m deep cells from which the mean volume backscattering strength (MVBS in dB re 1 m^-1^) and nautical area scattering coefficient (s~A~ in m^2^ nmi^-2^) were exported for each cell and analyzed in R (version 4.0.3, R Core Team). 
+
+## Results
+
+To this date, I have only processed data from June 30, 2017 during which the RV _Polarstern_ crossed the shelf break North East of Svalbard. 
+
+### Vertical distribution of scatterers
+The scatterers were distributed in two main sound scattering features, a shallow sound scattering layer (SSL) between 0 and 150 m depth in the epipelagic zone (Figure 1a, b), and a deep scattering layer (DSL) between ~ 280 and 630 m depth in the mesopelagic zone (Figure 1c, d ,e). The SSL was present over the shelf, slope, and deep basin whereas was associated with the slope and extended into the deep basin. 
+
+```{r MVBS data loading, echo=F, warning=F, message=F, fig.width=8, fig.height=9}
+
+# Load packages
+library(tidyverse)  # Tidy code
+library(lubridate)  # Fix date formats
+library(cowplot)    # Assemble plots
+
+# Read MVBS data
+MVBS <- map_dfr(.x = dir("data/", pattern = "*_MVBS_*", full.names = TRUE), .f = read_csv) %>%  # Load data into dataframe
+  unite(Date, Date_S, Time_S, sep = " ", remove = TRUE) %>%                                     # Combine date and time
+  mutate(Date = ymd_hm(format(ymd_hms(Date, tz = "UTC"), format='%Y%m%d %H:%M'), tz = "UTC"),   # Fix date format
+         Frequecy = as.factor(Frequency))                                                       # Convert frequency into factor
+
+# Set plot theme
+theme_set(theme_bw())
+theme_update(panel.background = element_rect(fill = "grey20"), 
+             panel.border = element_rect(fill = NA),
+             panel.grid = element_line(colour = "grey20"), 
+             legend.position = "none")
+# Plots
+MVBS18 <- MVBS %>%
+  filter(Frequency == "18") %>%
+  ggplot() +
+  geom_raster(aes(x = Date, y = Layer_depth_min, fill = Sv_mean)) +
+  scale_y_reverse("Depth (m)", breaks = seq(0, 2000, 200), limits = c(1000,0), expand = c(0,0)) +
+  scale_x_datetime("Time", expand = c(0,0)) +
+  scale_fill_viridis_c(expression("MVBS (dB re 1 m"^-1*")"), limits = c(-100,-60), na.value = "white") +
+  facet_wrap(~Frequency, ncol = 1) + 
+  theme(axis.title.y = element_blank())
+MVBS38 <- MVBS %>%
+  filter(Frequency == "38") %>%
+  ggplot() +
+  geom_raster(aes(x = Date, y = Layer_depth_min, fill = Sv_mean)) +
+  scale_y_reverse("Depth (m)", breaks = seq(0, 2000, 200), limits = c(1000,0), expand = c(0,0)) +
+  scale_x_datetime("Time", expand = c(0,0)) +
+  scale_fill_viridis_c(expression("MVBS (dB re 1 m"^-1*")"), limits = c(-100,-60), na.value = "white") +
+  facet_wrap(~Frequency, ncol = 1) + 
+  theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank())
+MVBS70 <- MVBS %>%
+  filter(Frequency == "70") %>%
+  ggplot() +
+  geom_raster(aes(x = Date, y = Layer_depth_min, fill = Sv_mean)) +
+  scale_y_reverse("Depth (m)", breaks = seq(0, 2000, 200), limits = c(600,0), expand = c(0,0)) +
+  scale_x_datetime("Time", expand = c(0,0)) +
+  scale_fill_viridis_c(expression("MVBS (dB re 1 m"^-1*")"), limits = c(-100,-60), na.value = "white") +
+  facet_wrap(~Frequency, ncol = 1) + 
+  theme(axis.text.x = element_blank(), axis.title.x = element_blank())
+MVBS120 <- MVBS %>%
+  filter(Frequency == "120") %>%
+  ggplot() +
+  geom_raster(aes(x = Date, y = Layer_depth_min, fill = Sv_mean)) +
+  scale_y_reverse("Depth (m)", breaks = seq(0, 2000, 200), limits = c(600,0), expand = c(0,0)) +
+  scale_x_datetime("Time", expand = c(0,0)) +
+  scale_fill_viridis_c(expression("MVBS (dB re 1 m"^-1*")"), limits = c(-100,-60), na.value = "white") +
+  facet_wrap(~Frequency, ncol = 1) + 
+  theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank())
+MVBS200 <- MVBS %>%
+  filter(Frequency == "200") %>%
+  ggplot() +
+  geom_raster(aes(x = Date, y = Layer_depth_min, fill = Sv_mean)) +
+  scale_y_reverse("Depth (m)", breaks = seq(0, 2000, 100), limits = c(300,0), expand = c(0,0)) +
+  scale_x_datetime("Time", expand = c(0,0)) +
+  scale_fill_viridis_c(expression("MVBS (dB re 1 m"^-1*")"), limits = c(-100,-60), na.value = "white") +
+  facet_wrap(~Frequency, ncol = 1) + 
+  theme(axis.text.x = element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank())
+
+# Assemble plot
+MVBS_echograms <- plot_grid(plot_grid(MVBS200, MVBS120, MVBS70, MVBS38, MVBS18,
+                                      ncol = 1, align = "v", axis = "tblr",
+                                      rel_heights = c(1,1,1,1,1.2),
+                                      labels = c("a","b","c","d","e"), label_size = 10),
+                            get_legend(MVBS18 + theme(legend.position = "right", 
+                                                      legend.key.height = unit(0.5, "in"),
+                                                      legend.key.width = unit(0.15, "in"),
+                                                      legend.margin = margin(0,0,0,0),
+                                                      legend.box.margin = margin(0,-5,0,0))),
+                            ncol = 2, rel_widths = c(1,0.25))
+MVBS_echograms
+ggsave("plots/PS1062_20170630_MVBS_echograms.png", MVBS_echograms, width = 8, height = 8, units = "in", dpi = 300)
+```
+
+Figure 1. Echogram of mean volume backscattering strength (MVBS) over the shelf break North East of Svalbard on June 30, 2017 at 200 (**a**), 120 (**b**), 70 (**c**), 38 (**d**), 18 (**e**) kHz. **Note the different depth axis**. Areas with bad acoustic data (due to acoustic interference with other instruments, or breaking sea-ice, or dead zone near the surface) are black.
+
+
+
